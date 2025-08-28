@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grow a Collection Index</title>
+    <style>
+        :root {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f1f5f9;
+            --border-primary: #e2e8f0;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --accent-blue: #3b82f6;
+            --accent-blue-hover: #2563eb;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --border-primary: #475569;
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0;
+            padding: 0;
+        }
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container { 
+            max-width: 1600px; 
+            margin: 0 auto; 
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem 0;
+        }
+
+        .header h1 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-blue), #8b5cf6, #ec4899);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+            letter-spacing: -0.025em;
+        }
+
+        .header p {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .controls-section {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-primary);
+        }
+
+        .controls-grid {
+            display: grid;
+            gap: 2rem;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .control-label {
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-primary);
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .filter-btn {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 2px solid var(--border-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 0.875rem;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-1px);
+        }
+
+        .filter-btn.selected {
+            background: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .input-field, .select-field {
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border-primary);
+            border-radius: 8px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .input-field:focus, .select-field:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .theme-toggle {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-blue-hover));
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .theme-toggle:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            border: 1px solid var(--border-primary);
+            padding: 2rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-blue), #8b5cf6, #ec4899);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        .card-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .card-name {
+            font-size: 1.375rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .card-meta {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .card-stats {
+            margin: 1.5rem 0;
+        }
+
+        .obtainment {
+            background: var(--bg-tertiary);
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-primary);
+        }
+
+        .cps-display {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+        }
+
+        .cps-value {
+            color: var(--accent-blue);
+            font-size: 2rem;
+        }
+
+        .multiplier-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .multiplier-btn {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 2px solid var(--border-primary);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+        }
+
+        .multiplier-btn:hover {
+            border-color: var(--accent-blue);
+        }
+
+        .multiplier-btn.active {
+            background: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .stats-summary {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-primary);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            border: 1px solid var(--border-primary);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--accent-blue);
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 4rem;
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .controls-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        *:focus-visible {
+            outline: 2px solid var(--accent-blue);
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body data-theme="dark">
+    <div class="container">
+        <header class="header">
+            <h1>Grow a Collection Index</h1>
+            <p>Arxzez - ᓚᘏᗢ</p>
+        </header>
+
+        <div class="stats-summary" id="stats-summary">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <span class="stat-number" id="total-cards">0</span>
+                    <span class="stat-label">Total Cards</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="currently-displayed-cards">0</span>
+                    <span class="stat-label">Currently Displayed</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="total-sets">0</span>
+                    <span class="stat-label">Sets</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="rarest-card">-</span>
+                    <span class="stat-label">Rarest Card</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls-section">
+            <div class="controls-grid">
+                <div class="control-group">
+                    <label class="control-label">Filter by Type</label>
+                    <div class="button-group" id="type-buttons"></div>
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">Filter by Set</label>
+                    <div class="button-group" id="set-buttons"></div>
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">Search</label>
+                    <input type="text" class="input-field" id="search-input" 
+                           placeholder="Search cards, types, or sets..." 
+                           autocomplete="off">
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">Sort By</label>
+                    <select class="select-field" id="sort-select">
+                        <option value="cps-desc">Highest CP/s</option>
+                        <option value="cps-asc">Lowest CP/s</option>
+                        <option value="rarity-desc">Highest Rarity</option>
+                        <option value="rarity-asc">Lowest Rarity</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">Theme</label>
+                    <button class="theme-toggle" id="theme-toggle">Dark Mode</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="cards-grid" id="cards-container">
+            <div class="loading">Loading cards...</div>
+        </div>
+    </div>
+
+    <script>
+        class CardIndex {
+            constructor() {
+                this.cardData = [];
+                this.filteredCards = [];
+                this.activeFilters = {
+                    type: null,
+                    set: null,
+                    search: ''
+                };
+                this.sortBy = 'cps-desc';
+                this.isDarkMode = true;
+                
+                this.currentPage = 0;
+                this.cardsPerPage = 20;
+                this.currentlydisplayedCards = [];
+                
+                this.init();
+            }
+
+            init() {
+                this.loadCardData();
+                this.setupEventListeners();
+                this.generateFilterButtons();
+                this.applyFiltersAndSort();
+                this.updateStats();
+            }
+
+            loadCardData() {
+                const rawData = `
+-----Starter Set-----
+Flamlett - CP/s: 1 - Type: Fire - Chance 1/4 | Flamlett Holo - CP/s: 1 - Type: Fire - Chance 1/40 | Grattata - CP/s: 1 - Type: Grass - Chance 1/4 | Grattata Holo - CP/s: 1 - Type: Grass - Chance 1/40 | Waterpie - CP/s: 1 - Type: Water - Chance 1/4 | Waterpie Holo - CP/s: 1 - Type: Water - Chance 1/40 | Flamtrio - CP/s: 1 - Type: Fire - Chance 1/12 | Flamtrio Holo - CP/s: 1 - Type: Fire - Chance 1/120 | Graticate - CP/s: 2 - Type: Grass - Chance 1/15 | Graticate Holo - CP/s: 2 - Type: Grass - Chance 1/150 | Coralpod - CP/s: 2 - Type: Water - Chance 1/20 | Coralpod Holo - CP/s: 2 - Type: Water - Chance 1/200 | Grensir - CP/s: 2 - Type: Grass - Chance 1/30 | Grensir Holo - CP/s: 2 - Type: Grass - Chance 1/300 | Aquafree - CP/s: 3 - Type: Water - Chance 1/60 | Aquafree Shiny - CP/s: 4 - Type: Water - Chance 1/1,333 |
+-----Electric Set-----
+| Zeeble - CP/s: 2 - Type: Electric - Chance 1/4 | Zeeble Holo - CP/s: 2 - Type: Electric - Chance 1/38 | Polygon - CP/s: 2 - Type: Electric - Chance 1/4 | Polygon Holo - CP/s: 3 - Type: Electric - Chance 1/44 | Dudos - CP/s: 3 - Type: Electric - Chance 1/5 | Dudos Holo - CP/s: 3 - Type: Electric - Chance 1/53 | Trakuna - CP/s: 3 - Type: Electric - Chance 1/7 | Trakuna Holo - CP/s: 3 - Type: Electric - Chance 1/66 | Elestar - CP/s: 3 - Type: Electric - Chance 1/9 | Elestar Holo - CP/s: 3 - Type: Electric - Chance 1/88 | Dutres - CP/s: 4 - Type: Electric - Chance 1/35 | Dutres Shiny - CP/s: 6 - Type: Electric - Chance 1/785 | Electrill - CP/s: 4 - Type: Electric - Chance 1/53 | Electrill Shiny - CP/s: 6 - Type: Electric - Chance 1/1,178 | Stormstar - CP/s: 5 - Type: Electric - Chance 1/106 | Stormstar shiny - CP/s: 7 - Type: Electric - Chance 1/2,356 |
+-----Twins Set-----
+| Niranda - CP/s: 4 - Type: Water - Chance 1/4 | Niranda Holo - CP/s: 4 - Type: Water - Chance 11/38 | Nirando - CP/s: 4 - Type: Fire - Chance 1/4 | Nirando Holo - CP/s: 4 - Type: Fire - Chance 1/44 | Nirina - CP/s: 5 - Type: Water - Chance 1/5 | Nirina Holo - CP/s: 6 - Type: Water - Chance 1/53 | Nirino - CP/s: 5 - Type: Water - Chance 1/7 | Nirino Holo - CP/s: 6 - Type: Water - Chance 1/66 | Carretch - CP/s: 7 - Type: Normal - Chance 1/9 | Carretch Shiny - CP/s: 10 - Type: Normal - Chance 1/196 | Niroqueen - CP/s: 8 - Type: Water - Chance 1/35 | Niroqueen Shiny - CP/s: 8 - Type: Water - Chance 1/784 | Niroking - CP/s: 8 - Type: Fire - Chance 1/53 | Niroking Shiny - CP/s: 12 - Type: Fire - Chance 1/1,176 | Snowlax - CP/s: 12 - Type: Water - Chance 1/132 | Snowlax Shiny - CP/s: 18 - Type: Water - Chance 1/2,939 |
+-----Blood Set-----
+| Venom - CP/s: 6 - Type: Dark - Chance 1/4 | Venom Holo - CP/s: 7 - Type: Dark - Chance 1/38  | Sprikeed  - CP/s: 6 - Type: Fire - Chance 1/4 | Sprikeed Holo - CP/s: 7 - Type: Fire - Chance 1/44 | Venomort - CP/s: 7 - Type: Dark - Chance 1/5 | Venomort Holo - CP/s: 8 - Type: Dark - Chance 1/53 | Bloobat - CP/s: 7 - Type: Dark - Chance 1/7 | Bloobat Holo - CP/s: 8 - Type: Dark - Chance 1/66 | Thornshed - CP/s: 8 - Type: Fire - Chance 1/9 | Thornshed Holo - CP/s: 9 - Type: Fire - Chance 1/88 | Bloodloom - CP/s: 11 - Type: Fire - Chance 1/35 | Bloodloom Shiny - CP/s: 16 - Type: Fire - Chance 1/781 | Vampbat - CP/s: 11 - Type: Dark - Chance 1/59 | Vampbat Shiny - CP/s: 16 - Type: Dark - Chance 1/1,301 | Bronix - CP/s: 16 - Type: Dark - Chance 1/176 | Bronix Shiny - CP/s: 24 - Type: Dark - Chance 1/3,904 |
+-----Toxic Set-----
+| Vedra - CP/s: 10 - Type: Dark - Chance 1/4 | Vedra Holo - CP/s: 12 - Type: Dark - Chance 1/37  | Omini - CP/s: 10 - Type: Psychic - Chance 1/4 | Omini Holo - CP/s: 12 - Type: Psychic - Chance 1/44 | Vipill - CP/s: 10 - Type: Dark - Chance 1/5 | Vipill Holo - CP/s: 12 - Type: Dark - Chance 1/52 | Gantela - CP/s: 14 - Type: Dark - Chance 1/7 | Gantela Shiny - CP/s: 21 - Type: Dark - Chance 1/145 | Hydra - CP/s: 14 - Type: Dark - Chance 1/9 | Hydra Shiny - CP/s: 21 - Type: Dark - Chance 1/194 | Omaster - CP/s: 19 - Type: Psychic - Chance 1/40 | Omaster Shiny - CP/s: 28 - Type: Psychic - Chance 1/894 | Vipilltor - CP/s: 19 - Type: Dark - Chance 1/65 | Vipilltor Shiny - CP/s: 28 - Type: Dark - Chance 1/1,453 | Vipras - CP/s: 25 - Type: Dark - Chance 1/262 | Vipras Shiny - CP/s: 37 - Type: Dark - Chance 1/5,811 | Vipras Gold - CP/s: 50 - Type: Dark - Chance 1/26,150 |
+-----Circuit Set-----
+| Oddisch  - CP/s: 13 - Type: Electric - Chance 1/4 | Oddisch Holo - CP/s: 15 - Type: Electric - Chance 1/37  | Sparky - CP/s: 13 - Type: Electric - Chance 1/4 | Sparky Holo - CP/s: 15 - Type: Electric - Chance 1/43 | Elecmite - CP/s: 13 - Type: Electric - Chance 1/5 | Elecmite Holo - CP/s: 15 - Type: Electric - Chance 1/51 | Bloom - CP/s: 17 - Type: Electric - Chance 1/6 | Bloom Shiny - CP/s: 25 - Type: Electric - Chance 1/143 | Thunter - CP/s: 17 - Type: Electric - Chance 1/9 | Thunter Shiny - CP/s: 25 - Type: Electric - Chance 1/208 | Electron - CP/s: 24 - Type: Electric - Chance 1/47 | Electron Shiny - CP/s: 36 - Type: Electric - Chance 1/1,038 | Vilebulb - CP/s: 24 - Type: Electric - Chance 1/73 | Vilebulb Shiny - CP/s: 36 - Type: Electric - Chance 1/1,632 | Lightgar - CP/s: 30 - Type: Electric - Chance 1/514 | Lightgar Shiny - CP/s: 45 - Type: Electric - Chance 1/11,422 | Lightgar Gold - CP/s: 60 - Type: Electric - Chance 1/51,400 |
+-----Grass Set-----
+| Greeniwag - CP/s: 18 - Type: Grass - Chance 1/4 | Greeniwag Holo - CP/s: 21 - Type: Grass - Chance 1/37  | Eggsey - CP/s: 20 - Type: Grass - Chance 1/4 | Eggsey Shiny - CP/s: 30 - Type: Grass - Chance 1/96 | Luckytung - CP/s: 20 - Type: Grass - Chance 1/5 | Luckytung Shiny - CP/s: 30 - Type: Grass - Chance 1/116 | Greeniwhirl - CP/s: 20 - Type: Grass - Chance 1/7 | Greeniwhirl  Shiny - CP/s: 30 - Type: Grass - Chance 1/144 | Poisaur - CP/s: 21 - Type: Grass - Chance 1/9 | Poisaur Shiny - CP/s: 31 - Type: Grass - Chance 1/193 | Greeniwrath - CP/s: 27 - Type: Grass - Chance 1/47 | Greeniwrath Shiny - CP/s: 40 - Type: Grass - Chance 1/1,051 | Vinasaur - CP/s: 27 - Type: Grass - Chance 1/65 | Vinasaur Shiny - CP/s: 40 - Type: Grass - Chance 1/1,444 | Toxisaur - CP/s: 35 - Type: Grass - Chance 1/520 | Toxisaur Shiny - CP/s: 52 - Type: Grass - Chance 1/11,556 | Toxisaur Gold - CP/s: 70 - Type: Grass - Chance 1/52,000 | 
+-----Rock Set-----
+| Flamuto - CP/s: 22 - Type: Fire - Chance 1/4 | Flamuto Holo - CP/s: 26 - Type: Fire - Chance 1/37  | Seadeen - CP/s: 22 - Type: Psychic - Chance 1/4 | Seadeen Holo - CP/s: 26 - Type: Psychic - Chance 1/96 | Rodude - CP/s: 25 - Type: Fighting - Chance 1/5 | Rodude Shiny - CP/s: 37 - Type: Fighting - Chance 1/116 | Dito - CP/s: 25 - Type: Psychic - Chance 1/7 | Dito Shiny - CP/s: 37 - Type: Psychic - Chance 1/144 | Goldking - CP/s: 26 - Type: Psychic - Chance 1/9 | Goldking Shiny - CP/s: 39 - Type: Psychic - Chance 1/193 | Rockeler - CP/s: 32 - Type: Fighting - Chance 1/47 | Rockeler Shiny - CP/s: 48 - Type: Fighting - Chance 1/1,051 | Flamutops - CP/s: 32 - Type: Fire - Chance 1/65 | Flamutops Shiny - CP/s: 48 - Type: Fire - Chance 1/1,444 | Rockem - CP/s: 42 - Type: Fighting - Chance 1/520 | Rockem Shiny - CP/s: 63 - Type: Fighting - Chance 1/11,556 | Rockem Gold - CP/s: 84 - Type: Fighting - Chance 1/52,000 |
+-----Waterfall Set-----
+| Electorb - CP/s: 24 - Type: Electric - Chance 1/4 | Electorb Holo - CP/s: 28 - Type: Electric - Chance 1/37  | Crababy - CP/s: 24 - Type: Water - Chance 1/4 | Crababy Holo - CP/s: 28 - Type: Water - Chance 1/43 | Tentamild - CP/s: 27 - Type: Water - Chance 1/5 | Tentamild Shiny - CP/s: 40 - Type: Water - Chance 1/115 | Atomicrode - CP/s: 27 - Type: Electric - Chance 1/6 | Atomicrode Shiny - CP/s: 40 - Type: Electric - Chance 1/144 | Princegler - CP/s: 29 - Type: Water - Chance 1/9 | Princegler Shiny - CP/s: 43 - Type: Water - Chance 1/192 | Madkarp - CP/s: 37 - Type: Water - Chance 1/47 | Madkarp Shiny - CP/s: 43 - Type: Water - Chance 1/1,049 | Tentabrutal - CP/s: 40 - Type: Water - Chance 1/65 | Madrados - CP/s: 57 - Type: Water - Chance 1/1,039 | Madrados Shiny - CP/s: 85 - Type: Water - Chance 1/23,089 | Madrados Gold - CP/s: 114 - Type: Water - Chance 1/103,900 |
+-----Glitch Set----- 
+| Glitchy - CP/s: 5 - Type: Dark - Chance 1/4 | Glitchy Holo - CP/s: 6 - Type: Dark - Chance 1/37  | Bugorm - CP/s: 7 - Type: Psychic - Chance 1/4 | Bugorm Holo - CP/s: 8 - Type: Psychic - Chance 1/43 | Bugant - CP/s: 10 - Type: Dark - Chance 1/5 | Bugant Holo - CP/s: 12 - Type: Dark - Chance 1/51 | Tinybit - CP/s: 15 - Type: Metal - Chance 1/6 | Tinybit Shiny - CP/s: 22 - Type: Metal - Chance 1/143 | Bugotrop - CP/s: 17 - Type: Psychic - Chance 1/9 | Bugotrop Shiny - CP/s: 25 - Type: Psychic - Chance 1/190 | Pikukyu - CP/s: 25 - Type: Psychic - Chance 1/47 | Pikukyu Shiny - CP/s: 37 - Type: Psychic - Chance 1/1,036 | Colosabyte - CP/s: 45 - Type: Metal - Chance 1/513 | Colosabyte Shiny - CP/s: 67 - Type: Metal - Chance 1/11,400 | Colosabyte Gold - CP/s: 90 - Type: Metal - Chance 1/51,300 | Torrant - CP/s: 45 - Type: Dark - Chance 1/513 | Torrant Shiny - CP/s: 67 - Type: Dark - Chance 1/11,400 | Torrant Gold - CP/s: 90 - Type: Dark - Chance 1/51,300 |
+-----Beach Set-----
+| Sandyghost - CP/s: 5 - Type: Psychic - Chance 1/4 | Sandyghost Holo - CP/s: 6 - Type: Psychic - Chance 1/5  | Winper - CP/s: 7 - Type: Water - Chance 1/5 | Winper Holo - CP/s: 8 - Type: Water - Chance 1/46 | Sandastle - CP/s: 10 - Type: Psychic - Chance 1/5 | Sandastle Holo - CP/s: 12 - Type: Psychic - Chance 1/51 | Sharbie - CP/s: 15 - Type: Dragon - Chance 1/6 | Sharbie Shiny - CP/s: 22 - Type: Dragon - Chance 1/137 | Piliper - CP/s: 20 - Type: Water - Chance 1/8 | Piliper Shiny - CP/s: 30 - Type: Water - Chance 1/171 | Sharbite - CP/s: 30 - Type: Dragon - Chance 1/31 | Sharbite Shiny - CP/s: 45 - Type: Dragon - Chance 1/684 | Sharchomp - CP/s: 50 - Type: Dragon - Chance 1/462 | Sharchomp Shiny - CP/s: 75 - Type: Dragon - Chance 1/10,256 | Sharchomp Gold - CP/s: 100 - Type: Dragon - Chance 1/46,150 | Suraiku - CP/s: 60 - Type: Electric - Chance 1/923 | Suraiku Shiny - CP/s: 90 - Type: Electric - Chance 1/20,511 | Suraiku Gold - CP/s: 120 - Type: Electric - Chance 1/92,300 |
+-----Moonlit Set-----
+| Riori - CP/s: 45 - Type: Fighting - Chance 1/1 | Riori Shiny - CP/s: 67 - Type: Fighting - Chance 1/23 | Riori Gold - CP/s: 90 - Type: Fighting - Chance 1/105 | Lupharos - CP/s: 55 - Type: Fighting - Chance 1/20 | Lupharos Shiny - CP/s: 82 - Type: Fighting - Chance 1/444 | Lupharos Gold - CP/s: 110 - Type: Fighting - Chance 1/2000 |
+`; // finish glitch-moonlit after youtubes break
+
+                this.cardData = this.parseCardData(rawData);
+            }
+
+            parseCardData(text) {
+                const cards = [];
+                const sets = text.trim().split(/-----\s*([^-]+?)\s*-----/);
+
+                for (let i = 1; i < sets.length; i += 2) {
+                    const setName = sets[i].trim();
+                    const cardBlock = sets[i + 1].trim();
+                    const entries = cardBlock.split('|').map(s => s.trim()).filter(s => s !== "");
+
+                    entries.forEach(entry => {
+                        const match = entry.match(/(.*?) - CP\/s: (\d+) - Type: (\w+)(?: - Chance ([\d\/,]+))?/);
+                        if (match) {
+                            const chanceStr = match[4] || '1/1';
+                            let denominator = 1;
+                            
+                            if (chanceStr.includes('/')) {
+                                denominator = parseInt(chanceStr.split('/')[1].replace(/,/g, ''));
+                            }
+                            
+                            cards.push({
+                                name: match[1].trim(),
+                                cps: parseInt(match[2], 10),
+                                type: match[3].trim(),
+                                set: setName.replace(' Set', ''),
+                                chance: chanceStr,
+                                chanceValue: denominator,
+                                percentage: ((1 / denominator) * 100).toFixed(3).replace(/\.?0+$/, ''),
+                                id: `${match[1].trim().replace(/\s/g, '-')}-${match[2]}`
+                            });
+                        }
+                    });
+                }
+
+                return cards;
+            }
+
+            calculateCps(baseCps, modifiers = {}) {
+                let finalCps = baseCps;
+
+                if (modifiers.psa10) finalCps *= 2;
+
+                let bonusMultiplier = 0;
+                if (modifiers.solar) bonusMultiplier += 0.05;
+                if (modifiers.glitched) bonusMultiplier += 0.05;
+
+                finalCps *= (1 + bonusMultiplier);
+                return Math.floor(finalCps);
+            }
+
+            setupEventListeners() {
+                document.getElementById('search-input').addEventListener('input', (e) => {
+                    this.activeFilters.search = e.target.value;
+                    this.applyFiltersAndSort();
+                });
+
+                document.getElementById('sort-select').addEventListener('change', (e) => {
+                    this.sortBy = e.target.value;
+                    this.applyFiltersAndSort();
+                });
+
+                document.getElementById('theme-toggle').addEventListener('click', () => {
+                    this.toggleTheme();
+                });
+            }
+
+            generateFilterButtons() {
+                this.generateTypeButtons();
+                this.generateSetButtons();
+            }
+
+            generateTypeButtons() {
+                const container = document.getElementById('type-buttons');
+                const types = [...new Set(this.cardData.map(card => card.type))].sort();
+
+                const allBtn = this.createFilterButton('All', 'type', null);
+                allBtn.classList.add('selected');
+                container.appendChild(allBtn);
+
+                types.forEach(type => {
+                    const btn = this.createFilterButton(type, 'type', type);
+                    container.appendChild(btn);
+                });
+            }
+
+            generateSetButtons() {
+                const container = document.getElementById('set-buttons');
+                const sets = [...new Set(this.cardData.map(card => card.set))].sort();
+
+                const allBtn = this.createFilterButton('All', 'set', null);
+                allBtn.classList.add('selected');
+                container.appendChild(allBtn);
+
+                sets.forEach(set => {
+                    const btn = this.createFilterButton(set, 'set', set);
+                    container.appendChild(btn);
+                });
+            }
+
+            createFilterButton(text, filterType, value) {
+                const btn = document.createElement('button');
+                btn.textContent = text;
+                btn.className = 'filter-btn';
+                btn.addEventListener('click', () => {
+                    this.setFilter(filterType, value);
+                    this.updateFilterButtons(filterType);
+                });
+                return btn;
+            }
+
+            setFilter(filterType, value) {
+                this.activeFilters[filterType] = value;
+                this.applyFiltersAndSort();
+            }
+
+            updateFilterButtons(filterType) {
+                const container = document.getElementById(`${filterType}-buttons`);
+                container.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+
+                const activeValue = this.activeFilters[filterType];
+                const targetBtn = Array.from(container.querySelectorAll('.filter-btn'))
+                    .find(btn => {
+                        if (activeValue === null && btn.textContent === 'All') return true;
+                        return btn.textContent === activeValue;
+                    });
+
+                if (targetBtn) targetBtn.classList.add('selected');
+            }
+
+            applyFiltersAndSort() {
+                let filtered = [...this.cardData];
+
+                if (this.activeFilters.type) {
+                    filtered = filtered.filter(card => card.type === this.activeFilters.type);
+                }
+
+                if (this.activeFilters.set) {
+                    filtered = filtered.filter(card => card.set === this.activeFilters.set);
+                }
+
+                if (this.activeFilters.search) {
+                    const search = this.activeFilters.search.toLowerCase();
+                    filtered = filtered.filter(card => 
+                        card.name.toLowerCase().includes(search) ||
+                        card.type.toLowerCase().includes(search) ||
+                        card.set.toLowerCase().includes(search)
+                    );
+                }
+
+                filtered.sort((a, b) => {
+                    switch (this.sortBy) {
+                        case 'cps-desc':
+                            return b.cps - a.cps;
+                        case 'cps-asc':
+                            return a.cps - b.cps;                            
+                        case 'rarity-desc':
+                            return b.chanceValue - a.chanceValue;
+                        case 'rarity-asc':
+                            return a.chanceValue - b.chanceValue;
+                        default:
+                            return b.cps - a.cps;
+                    }
+                });
+
+                this.filteredCards = filtered;
+                this.currentPage = 0;
+                this.renderCards();
+                this.updateStats();
+            }
+
+            renderCards() {
+                const container = document.getElementById('cards-container');
+                
+                if (this.filteredCards.length === 0) {
+                    container.innerHTML = `
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 4rem; color: var(--text-secondary);">
+                            <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">No cards found</h3>
+                            <p>Try adjusting your filters or search terms</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const totalPages = Math.ceil(this.filteredCards.length / this.cardsPerPage);
+                const startIndex = this.currentPage * this.cardsPerPage;
+                const endIndex = Math.min(startIndex + this.cardsPerPage, this.filteredCards.length);
+                const currentCards = this.filteredCards.slice(startIndex, endIndex);
+
+                const cardsHTML = currentCards.map(card => this.createCardHTML(card)).join('');
+                
+                const paginationHTML = this.createPaginationHTML(totalPages);
+                
+                container.innerHTML = cardsHTML + paginationHTML;
+                this.setupCardInteractions();
+            }
+
+            createPaginationHTML(totalPages) {
+                if (totalPages <= 1) return '';
+
+                const prevDisabled = this.currentPage === 0 ? 'disabled' : '';
+                const nextDisabled = this.currentPage >= totalPages - 1 ? 'disabled' : '';
+
+                return `
+                    <div style="grid-column: 1 / -1; display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 2rem; padding: 2rem;">
+                        <button class="theme-toggle" onclick="cardDB.changePage(${this.currentPage - 1})" ${prevDisabled}>
+                            Previous
+                        </button>
+                        <span style="color: var(--text-secondary); font-weight: 600;">
+                            Page ${this.currentPage + 1} of ${totalPages} 
+                            (${this.filteredCards.length} total cards)
+                        </span>
+                        <button class="theme-toggle" onclick="cardDB.changePage(${this.currentPage + 1})" ${nextDisabled}>
+                            Next
+                        </button>
+                    </div>
+                `;
+            }
+
+            changePage(newPage) {
+                const totalPages = Math.ceil(this.filteredCards.length / this.cardsPerPage);
+                if (newPage >= 0 && newPage < totalPages) {
+                    this.currentPage = newPage;
+                    this.renderCards();
+                    document.querySelector('.cards-grid').scrollIntoView({ behavior: 'smooth' });
+                }
+            }
+
+createCardHTML(card) {
+                const obtainment = this.getObtainmentText(card.set);
+                
+                let cardChance = card.chance;
+                let cardPercentage = card.percentage;
+                
+                if (card.name === 'Riori') {
+                    cardPercentage = '95';
+                }
+
+                return `
+                    <div class="card" data-card-id="${card.id}">
+                        <div class="card-header">
+                            <h3 class="card-name">${card.name}</h3>
+                            <div class="card-meta">Type: ${card.type} | ${card.set} Set</div>
+                        </div>
+                        
+                        <div class="card-stats">
+                            <div class="obtainment">${obtainment}</div>
+                            <div style="background: var(--bg-tertiary); padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.75rem; margin-bottom: 1rem; border: 1px solid var(--border-primary);">
+                                Pull Chance: ${cardChance} (${cardPercentage}%)
+                            </div>
+                            <div class="cps-display">
+                                CP/s: <span class="cps-value" data-base-cps="${card.cps}">${card.cps}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="multiplier-controls">
+                            <button class="multiplier-btn" data-modifier="psa10">PSA 10 (×2)</button>
+                            <button class="multiplier-btn" data-modifier="solar">Solar (+5%)</button>
+                            <button class="multiplier-btn" data-modifier="glitched">Glitched (+5%)</button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            getObtainmentText(set) {
+                if (set.includes('Glitch')) return 'Past Event (Trading Only)';
+                if (set.includes('Beach')) return 'Limited Event';
+                if (set.includes('Moonlit')) return 'Special Collection';
+                return 'Booster Pack Shop';
+            }
+
+            setupCardInteractions() {
+                document.querySelectorAll('.multiplier-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const card = e.target.closest('.card');
+                        
+                        btn.classList.toggle('active');
+                        this.updateCardCps(card);
+                    });
+                });
+            }
+
+            updateCardCps(cardElement) {
+                const cpsElement = cardElement.querySelector('.cps-value');
+                const baseCps = parseInt(cpsElement.dataset.baseCps);
+                const activeModifiers = {};
+
+                cardElement.querySelectorAll('.multiplier-btn.active').forEach(btn => {
+                    activeModifiers[btn.dataset.modifier] = true;
+                });
+
+                const newCps = this.calculateCps(baseCps, activeModifiers);
+                cpsElement.textContent = newCps;
+            }
+
+            updateStats() {
+                const totalCards = this.cardData.length;
+                const currentlydisplayedCards = this.filteredCards.length;
+                const totalSets = new Set(this.cardData.map(card => card.set)).size;
+                
+                let rarestCard = '-';
+                if (this.filteredCards.length > 0) {
+                    const rarest = this.filteredCards.reduce((prev, current) => 
+                        prev.chanceValue > current.chanceValue ? prev : current
+                    );
+                    rarestCard = rarest.chance;
+                }
+
+                document.getElementById('total-cards').textContent = totalCards;
+                document.getElementById('currently-displayed-cards').textContent = currentlydisplayedCards;
+                document.getElementById('total-sets').textContent = totalSets;
+                document.getElementById('rarest-card').textContent = rarestCard;
+            }
+
+            toggleTheme() {
+                this.isDarkMode = !this.isDarkMode;
+                document.body.dataset.theme = this.isDarkMode ? 'dark' : 'light';
+                
+                const themeToggle = document.getElementById('theme-toggle');
+                themeToggle.textContent = this.isDarkMode ? 'Dark Mode' : 'Light Mode';
+            }
+        }
+
+        let cardDB;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            cardDB = new CardIndex();
+        });
+    </script>
+</body>
+</html>
