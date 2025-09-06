@@ -743,9 +743,9 @@ createCardHTML(card) {
             }
 
             getObtainmentText(set) {
-                if (set.includes('Glitch')) return 'Past Event (Trading Only)';
+                if (set.includes('Glitch')) return 'Limited Event';
                 if (set.includes('Beach')) return 'Limited Event';
-                if (set.includes('Moonlit')) return 'Special Collection';
+                if (set.includes('Moonlit') || set.includes('Lumenox')) return 'Exclusive Set';
                 return 'Booster Pack Shop';
             }
 
@@ -811,6 +811,7 @@ createCardHTML(card) {
 </body>
 
 </html>
+
 
 
 
